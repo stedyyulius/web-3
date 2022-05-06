@@ -14,7 +14,7 @@ interface InputParams {
     name: string, 
     type: string
     value?: string,
-    handleChange: (e: ChangeEvent, name: string) => void
+    handleChange: (e: ChangeEvent<Element>, name: string) => void
 }
 
 const Input = (params: InputParams) => {
@@ -37,7 +37,7 @@ export const Welcome = () => {
     
   const { currentAccount, connectWallet, handleChange, sendTransaction, formData, isLoading } = useContext(TransactionContext);
 
-  const handleSubmit = (e: MouseEvent<HTMLButtonElement>) => {
+  const handleSubmit = (e: MouseEvent) => {
     const { addressTo, amount, keyword, message } = formData;
 
     e.preventDefault();
@@ -120,7 +120,7 @@ export const Welcome = () => {
               : (
                 <button
                   type="button"
-                  onClick={(e) => handleSubmit(e)}
+                  onClick={(e: any) => handleSubmit(e)}
                   className="text-white w-full mt-2 border-[1px] p-2 border-[#3d4f7c] hover:bg-[#3d4f7c] rounded-full cursor-pointer"
                 >
                   Send now

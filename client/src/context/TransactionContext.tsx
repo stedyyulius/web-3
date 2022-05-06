@@ -1,9 +1,58 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, createContext, ReactElement, useCallback, ChangeEvent } from "react";
 import { ethers } from "ethers";
 
 import { contractABI, contractAddress } from "../utils/constants";
 
-export const TransactionContext = React.createContext();
+interface Props {
+  children: ReactElement
+}
+
+interface Transaction {
+    receiver: string,
+    sender: string,
+    timestamp: any,
+    message: string,
+    keyword: string,
+    amount: {
+      _hex: string
+    }
+}
+
+declare global {
+  interface Window{
+    ethereum?:any
+  }
+}
+
+export const TransactionContext = createContext<{
+      transactionCount: string | null,
+      connectWallet: () => void,
+      transactions: any,
+      currentAccount: string,
+      isLoading: boolean,
+      sendTransaction: () => void,
+      handleChange: (e: ChangeEvent<HTMLInputElement | Element>, name: string) => void,
+      formData: { 
+        addressTo: string, 
+        amount: string, 
+        keyword: string, 
+        message: string 
+      },
+}>({
+    transactionCount: '',
+    connectWallet: () => null,
+    transactions: [],
+    currentAccount: '',
+    isLoading: false,
+    sendTransaction: () => null,
+    handleChange: (e: ChangeEvent<HTMLInputElement | Element>, name: string) => null,
+    formData: { 
+      addressTo: '', 
+      amount: '', 
+      keyword: '', 
+      message: '' 
+    },
+})
 
 const { ethereum } = window;
 
@@ -15,15 +64,16 @@ const createEthereumContract = () => {
   return transactionsContract;
 };
 
-export const TransactionsProvider = ({ children }) => {
+export const TransactionsProvider = (props: Props) => {
   const [formData, setformData] = useState({ addressTo: "", amount: "", keyword: "", message: "" });
   const [currentAccount, setCurrentAccount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [transactionCount, setTransactionCount] = useState(localStorage.getItem("transactionCount"));
   const [transactions, setTransactions] = useState([]);
 
-  const handleChange = (e, name) => {
-    setformData((prevState) => ({ ...prevState, [name]: e.target.value }));
+  const handleChange = (e: ChangeEvent<HTMLInputElement| Element>, name: string) => {
+    const target = e.target as HTMLInputElement;
+    setformData((prevState) => ({ ...prevState, [name]: target.value }));
   };
 
   const getAllTransactions = async () => {
@@ -33,7 +83,7 @@ export const TransactionsProvider = ({ children }) => {
 
         const availableTransactions = await transactionsContract.getAllTransactions();
 
-        const structuredTransactions = availableTransactions.map((transaction) => ({
+        const structuredTransactions = availableTransactions.map((transaction: Transaction) => ({
           addressTo: transaction.receiver,
           addressFrom: transaction.sender,
           timestamp: new Date(transaction.timestamp.toNumber() * 1000).toLocaleString(),
@@ -53,7 +103,7 @@ export const TransactionsProvider = ({ children }) => {
     }
   };
 
-  const checkIfWalletIsConnect = async () => {
+  const checkIfWalletIsConnect = useCallback(async () => {
     try {
       if (!ethereum) return alert("Please install MetaMask.");
 
@@ -69,7 +119,7 @@ export const TransactionsProvider = ({ children }) => {
     } catch (error) {
       console.log(error);
     }
-  };
+  }, []);
 
   const checkIfTransactionsExists = async () => {
     try {
@@ -143,7 +193,7 @@ export const TransactionsProvider = ({ children }) => {
   useEffect(() => {
     checkIfWalletIsConnect();
     checkIfTransactionsExists();
-  }, [transactionCount]);
+  }, [transactionCount, checkIfWalletIsConnect]);
 
   return (
     <TransactionContext.Provider
@@ -158,7 +208,7 @@ export const TransactionsProvider = ({ children }) => {
         formData,
       }}
     >
-      {children}
+      {props.children}
     </TransactionContext.Provider>
   );
 };
